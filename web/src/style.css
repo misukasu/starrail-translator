@@ -1,0 +1,528 @@
+/* ===== スタレ文字フォント（差し替えるときはここだけ変更） ===== */
+@font-face {
+  font-family: 'StarRailFont';
+  src: url('/fonts/starrail.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* ===== 色と文字 ===== */
+:root {
+  --night: #141a38;
+  --panel: #1f2750;
+  --line: #3a4478;
+  --text: #eef0fa;
+  --muted: #a3abd0;
+  --gold: #dcbf7a;
+  --alert: #f0a39a;
+  --ui-font: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+
+  font-family: var(--ui-font);
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--night);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.site-header,
+main {
+  width: min(960px, 100% - 2rem);
+  margin-inline: auto;
+}
+
+.site-header {
+  padding: 2.5rem 0 1.5rem;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+}
+
+.site-header p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+main {
+  display: grid;
+  gap: 1.5rem;
+  padding-bottom: 4rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ===== 画像の読み込み ===== */
+.dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.dropzone:hover,
+.dropzone.is-dragging {
+  border-color: var(--gold);
+  background: var(--panel);
+}
+
+.dropzone:focus-within {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.dropzone-main {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.dropzone-sub {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ===== お知らせ ===== */
+.status {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--muted);
+  background: var(--panel);
+}
+
+.status[data-kind='error'] {
+  border-left-color: var(--alert);
+  color: var(--alert);
+}
+
+/* ===== 画像 ===== */
+.images-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.images-section[hidden] {
+  display: none;
+}
+
+.images-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.text-button {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  border-color: var(--gold);
+}
+
+.text-button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.text-button[hidden] {
+  display: none;
+}
+
+.images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.images figure {
+  margin: 0;
+}
+
+.images figcaption {
+  margin-bottom: 0.4rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.images canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+/* 範囲選択 */
+.canvas-wrap {
+  position: relative;
+  cursor: crosshair;
+  touch-action: none; /* スマホで囲むときに画面がスクロールしないようにする */
+  user-select: none;
+}
+
+.selection {
+  position: absolute;
+  border: 2px solid var(--gold);
+  border-radius: 3px;
+  background: rgb(220 191 122 / 0.15);
+  pointer-events: none;
+}
+
+.selection.is-drawing {
+  border-style: dashed;
+}
+
+.selection.is-reading {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.selection.is-empty {
+  border-color: var(--alert);
+  background: rgb(240 163 154 / 0.12);
+}
+
+@keyframes pulse {
+  50% {
+    background: rgb(220 191 122 / 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selection.is-reading {
+    animation: none;
+  }
+}
+
+/* ===== テキスト（列車の切符のようなパネル） ===== */
+.ticket {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.ticket-half {
+  position: relative;
+  padding: 1.25rem 1.5rem 1.5rem;
+  min-width: 0;
+}
+
+.ticket-half + .ticket-half {
+  border-left: 2px dashed var(--line);
+}
+
+/* 切り取り線の上下の切れ込み */
+.ticket-half + .ticket-half::before,
+.ticket-half + .ticket-half::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: var(--night);
+}
+
+.ticket-half + .ticket-half::before {
+  top: -10px;
+  clip-path: inset(50% 0 0 0);
+}
+
+.ticket-half + .ticket-half::after {
+  bottom: -10px;
+  clip-path: inset(0 0 50% 0);
+}
+
+.ticket h2 {
+  margin: 0 0 0.5rem;
+  color: var(--gold);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.ticket p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ticket p:empty::before {
+  content: 'まだテキストがありません';
+  color: var(--muted);
+  font-family: var(--ui-font);
+  font-size: 0.875rem;
+}
+
+.text-starrail {
+  font-family: 'StarRailFont', var(--ui-font);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.5;
+}
+
+.text-latin {
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 640px) {
+  .ticket {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-half + .ticket-half {
+    border-left: none;
+    border-top: 2px dashed var(--line);
+  }
+
+  .ticket-half + .ticket-half::before,
+  .ticket-half + .ticket-half::after {
+    display: none;
+  }
+}
+
+/* ===== 開発用 ===== */
+.dev-tools {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dev-tools summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.dev-tools label {
+  display: block;
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dev-tools textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--night);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.dev-tools textarea:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.dev-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.dev-grid label {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.dev-tools select,
+.dev-tools input[type='range'] {
+  width: 100%;
+  font: inherit;
+}
+
+.dev-tools select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--night);
+  color: var(--text);
+}
+
+.dev-tools input[type='range'] {
+  accent-color: var(--gold);
+}
+
+.dev-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.dev-tools h3 {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--gold);
+}
+
+.debug-lines {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.debug-lines:empty::before {
+  content: 'まだ認識していません';
+  color: var(--muted);
+}
+
+.debug-lines .is-rejected {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* ===== 学習データの保存 ===== */
+.sample-panel[hidden] {
+  display: none;
+}
+
+.sample-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.folder-name {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.dev-tools .area-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0 auto;
+}
+
+.dev-tools .area-label select {
+  width: auto;
+}
+
+.sample-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sample-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sample-list li.is-saved {
+  opacity: 0.6;
+}
+
+.sample-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 56px;
+  justify-self: start;
+  border-radius: 4px;
+}
+
+.sample-list input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--night);
+  color: var(--text);
+  font: inherit;
+}
+
+.sample-list input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.text-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sample-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.sample-footer .dev-note {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .sample-list li {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dev-tools[hidden] {
+  display: none;
+}
+
+/* ===== ページ下部の注意書き ===== */
+.site-footer {
+  width: min(960px, 100% - 2rem);
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.site-footer p {
+  margin: 0 0 0.4rem;
+}

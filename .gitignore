@@ -1,0 +1,13 @@
+# ファン製フォント（使用条件の都合で公開しない）
+fonts/StarRail;common.ttf
+
+# Pythonの仮想環境
+.venv/
+
+# 学習用に作ったデータ（いつでも作り直せる）
+training/output/
+training/backgrounds/
+
+# ゲームのスクリーンショット（公開しない）
+eval/
+finetune/

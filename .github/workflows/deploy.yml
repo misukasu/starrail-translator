@@ -1,0 +1,51 @@
+# main ブランチにコミットが届くたびに、アプリを書き出して GitHub Pages に公開する
+name: GitHub Pagesに公開
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # GitHubの画面から手動でも実行できるようにする
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開の処理が重なったときは、新しい方だけを実行する
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 部品のインストール
+        run: npm ci
+
+      - name: アプリの書き出し
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+      - name: 公開
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>スタレ文字翻訳</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>スタレ文字翻訳</h1>
+      <p>ゲーム内の独自文字が写った画像を読み込むと、アルファベットに置き換えて表示します。</p>
+    </header>
+
+    <main>
+      <label id="dropzone" class="dropzone">
+        <input id="file-input" class="visually-hidden" type="file" accept="image/*" />
+        <span class="dropzone-main">画像を選ぶ</span>
+        <span class="dropzone-sub">ここにドラッグ＆ドロップ、またはCtrl+Vで貼り付けもできます</span>
+      </label>
+
+      <p id="status" class="status" role="status" hidden></p>
+
+      <section id="images" class="images-section" hidden>
+        <div class="images-toolbar">
+          <p class="hint">読みたい文字をドラッグで囲むと、その部分だけを読み取ります（いくつでも選べます）。</p>
+          <button id="clear-regions" class="text-button" type="button" hidden>選択をすべて解除</button>
+        </div>
+        <div class="images">
+          <figure>
+            <figcaption>元画像</figcaption>
+            <div id="original-wrap" class="canvas-wrap">
+              <canvas id="original-canvas"></canvas>
+            </div>
+          </figure>
+          <figure>
+            <figcaption>翻訳後画像</figcaption>
+            <canvas id="translated-canvas"></canvas>
+          </figure>
+        </div>
+      </section>
+
+      <section class="ticket" aria-label="テキスト">
+        <div class="ticket-half">
+          <h2>原文</h2>
+          <p id="source-text" class="text-starrail"></p>
+        </div>
+        <div class="ticket-half">
+          <h2>翻訳</h2>
+          <p id="translated-text" class="text-latin"></p>
+        </div>
+      </section>
+
+      <details id="sample-panel" class="dev-tools sample-panel" open hidden>
+        <summary>学習データとして保存</summary>
+        <p class="dev-note">
+          範囲を選んで読んだ行が並びます。英文を正しく直してから保存すると、学習用のデータ（画像と正解テキスト）になります。
+        </p>
+        <div class="sample-controls">
+          <button id="pick-folder" class="text-button" type="button">保存先フォルダを選ぶ</button>
+          <span id="folder-name" class="folder-name">未選択（選ばない場合はダウンロードフォルダに保存されます）</span>
+          <label class="area-label">
+            地域
+            <select id="area-select">
+              <option value="jarilo">ヤリーロ-VI</option>
+              <option value="penacony">ピノコニー</option>
+              <option value="amphoreus">オンパロス</option>
+              <option value="unknown">不明</option>
+            </select>
+          </label>
+        </div>
+        <ul id="sample-list" class="sample-list"></ul>
+        <div class="sample-footer">
+          <button id="save-all" class="text-button" type="button">未保存をすべて保存</button>
+          <p id="sample-status" class="dev-note" role="status"></p>
+        </div>
+      </details>
+
+      <details id="dev-tools" class="dev-tools" hidden>
+        <summary>開発用の設定と表示テスト</summary>
+
+        <div class="dev-grid">
+          <label>
+            文字の探し方（範囲を選んでいないとき）
+            <select id="psm-select">
+              <option value="11" selected>画像内に散らばった文字を探す（通常）</option>
+              <option value="3">画像全体を自動で解析する</option>
+              <option value="6">1つの文章のかたまりとして読む</option>
+              <option value="7">1行だけの画像として読む（切り抜き用）</option>
+            </select>
+          </label>
+          <label>
+            読む前の拡大
+            <select id="scale-select">
+              <option value="1">そのまま</option>
+              <option value="2" selected>2倍</option>
+              <option value="3">3倍</option>
+            </select>
+          </label>
+          <label>
+            信頼度のしきい値：<span id="confidence-value">50</span>
+            <input id="confidence-input" type="range" min="0" max="95" step="5" value="50" />
+          </label>
+        </div>
+        <p class="dev-note">設定を変えたら、同じ画像をもう一度読み込むと反映されます。</p>
+
+        <h3>認識した行（信頼度つき）</h3>
+        <ul id="debug-lines" class="debug-lines"></ul>
+
+        <label for="test-input">表示テスト：入力した文字が、上の「原文」と「翻訳」に表示されます</label>
+        <textarea id="test-input" rows="2">Welcome aboard the Astral Express 2026!</textarea>
+      </details>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        このアプリは「崩壊：スターレイル」のファンが個人で作成した非公式のツールです。HoYoverseとは関係ありません。
+      </p>
+      <p>読み込んだ画像は、お使いのブラウザの中だけで処理され、どこにも送信・保存されません。</p>
+      <p>
+        対応している字体：宇宙ステーション「ヘルタ」・ヤリーロ-VI・ピノコニー・二相楽園・千星シティ（羅浮・オンパロスには対応していません）。読み取り結果には誤りが含まれることがあります。
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
