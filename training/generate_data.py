@@ -136,6 +136,18 @@ class Fonts:
         self.starrail_path = starrail_path
         self.latin_path = next((p for p in LATIN_FONT_CANDIDATES if Path(p).exists()), None)
         self.cache: dict[int, tuple] = {}
+        self.starrail_chars = self._covered_chars(starrail_path)
+
+    @staticmethod
+    def _covered_chars(path: Path) -> set[str]:
+        """スタレ文字フォントに入っている文字を調べる（入っている数字や記号は、スタレ文字フォントで描く）"""
+        try:
+            from fontTools.ttLib import TTFont
+        except ImportError:
+            print("注意: fonttools が無いため、数字や記号は普通のフォントで描きます（pip install fonttools で解決します）")
+            return set(string.ascii_letters)
+        cmap = TTFont(str(path)).getBestCmap()
+        return {chr(code) for code in cmap if chr(code) in ALLOWED_CHARS and chr(code) != " "}
 
     def get(self, size: int):
         if size not in self.cache:
@@ -144,14 +156,14 @@ class Fonts:
                 latin = ImageFont.truetype(self.latin_path, size)
             else:
                 latin = ImageFont.load_default(size)
-            self.cache[size] = (starrail, latin)
+            self.cache[size] = (starrail, latin, self.starrail_chars)
         return self.cache[size]
 
 
 def render_text(text: str, fonts: tuple, color: tuple, spacing: int, stroke: int = 0) -> Image.Image:
-    """1文字ずつ、アルファベットはスタレ文字、それ以外は普通のフォントで描く"""
-    starrail, latin = fonts
-    pick = [starrail if ch in string.ascii_letters else latin for ch in text]
+    """1文字ずつ、スタレ文字フォントに入っている文字はそのフォントで、それ以外は普通のフォントで描く"""
+    starrail, latin, starrail_chars = fonts
+    pick = [starrail if ch in starrail_chars else latin for ch in text]
     advances = [font.getlength(ch) for font, ch in zip(pick, text)]
     ascent = max(f.getmetrics()[0] for f in (starrail, latin))
     descent = max(f.getmetrics()[1] for f in (starrail, latin))

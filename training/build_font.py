@@ -1,4 +1,4 @@
-"""Illustratorで書き出したSVG（upper_A.svg 〜 lower_z.svg）から、フォントを作るスクリプト
+"""Illustratorで書き出したSVG（upper_A.svg 〜 lower_z.svg、digit_0.svg 〜 digit_9.svg）から、フォントを作るスクリプト
 
 FontForgeに付属しているPythonで実行します（普通のPythonでは動きません）。
 Windowsのコマンドプロンプトで、次のように実行します（FontForgeのインストール先に合わせて変えてください）:
@@ -31,6 +31,8 @@ VERSION = "0.1"
 
 SIDE_BEARING = 50  # 文字の左右に付ける余白（フォントの単位。文字の高さ全体が1000）
 SPACE_WIDTH = 300  # スペースの幅
+# True にすると、数字をすべて同じ幅にする（数字を縦にそろえて並べたときに桁がずれない）
+TABULAR_DIGITS = True
 # ベースラインより下に伸びる文字（ベースラインの判定から除く）
 # スタレ文字では英語の g j p q y ではなく、この7つが下に伸びる。大文字も伸びる場合は、ここに追加する
 DESCENDERS = set("bdfklvw")
@@ -53,12 +55,15 @@ def load_svg_without_stroke(path):
 
 
 def char_from_name(stem):
-    """upper_A → "A"、lower_a → "a" のように、ファイル名から文字を取り出す"""
+    """upper_A → "A"、lower_a → "a"、digit_0 → "0" のように、ファイル名から文字を取り出す"""
     match = re.fullmatch(r"(upper|lower)_([A-Za-z])", stem)
-    if not match:
-        return None
-    kind, letter = match.groups()
-    return letter.upper() if kind == "upper" else letter.lower()
+    if match:
+        kind, letter = match.groups()
+        return letter.upper() if kind == "upper" else letter.lower()
+    match = re.fullmatch(r"digit_([0-9])", stem)
+    if match:
+        return match.group(1)
+    return None
 
 
 def main():
@@ -117,6 +122,16 @@ def main():
     space = font.createChar(32)
     space.width = SPACE_WIDTH
 
+    # 数字を同じ幅にそろえる（一番幅の広い数字に合わせて、それぞれ中央に置く）
+    digits = [g for ch, g in glyphs.items() if ch.isdigit()]
+    if TABULAR_DIGITS and digits:
+        widest = max(g.boundingBox()[2] - g.boundingBox()[0] for g in digits)
+        advance = int(round(widest + SIDE_BEARING * 2))
+        for glyph in digits:
+            shape_width = glyph.boundingBox()[2] - glyph.boundingBox()[0]
+            glyph.left_side_bearing = int(round((advance - shape_width) / 2))
+            glyph.width = advance
+
     # ---- 結果の報告 ----
     def median_top(chars):
         tops = [glyphs[c].boundingBox()[3] for c in chars if c in glyphs]
@@ -124,10 +139,14 @@ def main():
 
     lower_plain = [c for c in "acemnorsuxz"]  # 小文字の高さを測るのに使う文字
     upper_all = [chr(c) for c in range(ord("A"), ord("Z") + 1)]
-    print(f"読み込んだ文字: {len(glyphs)} / 52")
-    missing = [c for c in upper_all + [c.lower() for c in upper_all] if c not in glyphs]
+    letters = upper_all + [c.lower() for c in upper_all]
+    digit_chars = [str(n) for n in range(10)]
+    print(f"読み込んだ文字: アルファベット {sum(c in glyphs for c in letters)} / 52、数字 {sum(c in glyphs for c in digit_chars)} / 10")
+    missing = [c for c in letters + digit_chars if c not in glyphs]
     if missing:
         print(f"足りない文字: {' '.join(missing)}")
+    if digits:
+        print(f"数字の高さ（中央値）: {median_top(digit_chars)}")
     print(f"大文字の高さ（中央値）: {median_top(upper_all)}")
     print(f"小文字の高さ（中央値）: {median_top(lower_plain)}")
     too_tall = [ch for ch, g in glyphs.items() if g.boundingBox()[3] > font.ascent]
